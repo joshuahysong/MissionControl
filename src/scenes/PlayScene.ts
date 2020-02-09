@@ -1,4 +1,5 @@
 import { Scene } from 'phaser'
+import { Constants } from './../constants';
 
 export default class PlayScene extends Scene {
     constructor() {
@@ -10,28 +11,30 @@ export default class PlayScene extends Scene {
     private ship: Phaser.Physics.Arcade.Image;
     private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
     private emitter: Phaser.GameObjects.Particles.ParticleEmitter;
+    private missioncontrol: Phaser.GameObjects.Sprite;
 
     public create() {
         this.bg = this.add.tileSprite(0, 0, window.innerWidth, window.innerHeight, 'background').setOrigin(0).setScrollFactor(0);
 
         let galaxy = this.add.image(5345 + 1024, 327 + 1024, 'space', 'galaxy').setBlendMode(1).setScrollFactor(0.6);
 
-        this.add.image(512, 680, 'space', 'blue-planet').setOrigin(0).setScrollFactor(0.6);
+        for (let i = 0; i < 8; i++)
+        {
+            this.add.image(Phaser.Math.Between(0, Constants.worldSizeX), Phaser.Math.Between(0, Constants.worldSizeY), 'space', 'eyes').setBlendMode(1).setScrollFactor(0.55);
+        }
+
+        this.add.image(1100, 900, 'space', 'blue-planet').setOrigin(0).setScrollFactor(0.8);
         this.add.image(2833, 1246, 'space', 'brown-planet').setOrigin(0).setScrollFactor(0.6);
         this.add.image(3875, 531, 'space', 'sun').setOrigin(0).setScrollFactor(0.6);
         this.add.image(908, 3922, 'space', 'gas-giant').setOrigin(0).setScrollFactor(0.6);
         this.add.image(3140, 2974, 'space', 'brown-planet').setOrigin(0).setScrollFactor(0.6).setScale(0.8).setTint(0x882d2d);
         this.add.image(6052, 4280, 'space', 'purple-planet').setOrigin(0).setScrollFactor(0.6);
 
-        for (let i = 0; i < 8; i++)
-        {
-            this.add.image(Phaser.Math.Between(0, 8000), Phaser.Math.Between(0, 6000), 'space', 'eyes').setBlendMode(1).setScrollFactor(0.8);
-        }
-
         this.stars = this.add.tileSprite(window.innerWidth / 2, window.innerHeight / 2, window.innerWidth, window.innerHeight, 'stars').setScrollFactor(0);
+        this.missioncontrol = this.add.sprite(Constants.worldSizeX / 2 + 200, Constants.worldSizeY / 2, 'missioncontrol');
+        this.missioncontrol.setScale(0.5);
 
         let particles = this.add.particles('space');
-
         this.emitter = particles.createEmitter({
             on: false,
             frame: 'yellow',
@@ -52,19 +55,26 @@ export default class PlayScene extends Scene {
             }
         });        
 
-        this.ship = this.physics.add.image(4000, 3000, 'ship').setDepth(2);
+        this.ship = this.physics.add.image(Constants.worldSizeX / 2, Constants.worldSizeY / 2, 'ship').setDepth(2);
         this.ship.displayWidth = 128;
         this.ship.scaleY = this.ship.scaleX;
         this.ship.setDrag(0);
         this.ship.setAngularDrag(400);
+        this.ship.rotation = -Math.PI / 2;
         (<Phaser.Physics.Arcade.Body>this.ship.body).setMaxSpeed(600);
 
         this.emitter.startFollow(this.ship);
-
         this.cameras.main.startFollow(this.ship);
 
         this.cursors = this.input.keyboard.createCursorKeys();
 
+        this.tweens.add({
+            targets: this.missioncontrol,
+            angle: 360,
+            duration: 100000,
+            ease: 'Linear',
+            loop: -1
+        });
         this.tweens.add({
             targets: galaxy,
             angle: 360,

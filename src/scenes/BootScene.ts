@@ -11,6 +11,7 @@ export default class BootScene extends Scene {
     this.load.image('stars', 'stars.png');
     this.load.image('ship', 'rocket.png');
     this.load.atlas('space', 'space.png', 'space.json');
+    this.load.image('missioncontrol', 'missioncontrol.png');
   }
 
   public create() {

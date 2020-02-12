@@ -10,7 +10,9 @@ export default class PlayScene extends Scene {
     private stars: Phaser.GameObjects.TileSprite;
     private ship: Phaser.Physics.Arcade.Image;
     private cursors: Phaser.Types.Input.Keyboard.CursorKeys;
-    private emitter: Phaser.GameObjects.Particles.ParticleEmitter;
+    private mainEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
+    private portEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
+    private starboardEmitter: Phaser.GameObjects.Particles.ParticleEmitter;
     private missioncontrol: Phaser.GameObjects.Sprite;
 
     public create() {
@@ -35,12 +37,12 @@ export default class PlayScene extends Scene {
         this.missioncontrol.setScale(0.5);
 
         let particles = this.add.particles('space');
-        this.emitter = particles.createEmitter({
+        this.mainEmitter = particles.createEmitter({
             on: false,
             frame: 'yellow',
-            lifespan: 750,
+            lifespan: 600,
             angle: {
-                onEmit: (particle: Phaser.GameObjects.Particles.Particle, key: string, value: number) => {
+                onEmit: () => {
                     let v = Phaser.Math.Between(-5, 5);
                     return (this.ship.angle - 180) + v;
                 } 
@@ -53,7 +55,27 @@ export default class PlayScene extends Scene {
                     return (750 - (<Phaser.Physics.Arcade.Body>this.ship.body).speed);
                 }
             }
-        });        
+        });
+        let thrustEmitterConfig = {
+            on: false,
+            frame: 'smoke',
+            lifespan: 200,
+            alpha: 0.85,
+            scale: { start: 0.1, end: 0 },
+            blendMode: 'ADD',
+            speedX: {
+                onEmit: () => {
+                    return (<Phaser.Physics.Arcade.Body>this.ship.body).velocity.x * 1.05;
+                } 
+            },
+            speedY: {
+                onEmit: () => {
+                    return (<Phaser.Physics.Arcade.Body>this.ship.body).velocity.y * 1.05;
+                } 
+            }
+        }
+        this.portEmitter = particles.createEmitter(thrustEmitterConfig);
+        this.starboardEmitter = particles.createEmitter(thrustEmitterConfig);  
 
         this.ship = this.physics.add.image(Constants.worldSizeX / 2, Constants.worldSizeY / 2, 'ship').setDepth(2);
         this.ship.displayWidth = 128;
@@ -63,7 +85,9 @@ export default class PlayScene extends Scene {
         this.ship.rotation = -Math.PI / 2;
         (<Phaser.Physics.Arcade.Body>this.ship.body).setMaxSpeed(600);
 
-        this.emitter.startFollow(this.ship);
+        this.mainEmitter.startFollow(this.ship);
+        this.portEmitter.startFollow(this.ship);
+        this.starboardEmitter.startFollow(this.ship);
         this.cameras.main.startFollow(this.ship);
 
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -84,31 +108,44 @@ export default class PlayScene extends Scene {
         });
     }
 
-    public update() {        
-        let point = new Phaser.Geom.Point(-40, 0);
-        Phaser.Math.RotateAround(point, 0, 0, this.ship.rotation);
-        this.emitter.followOffset = new Phaser.Math.Vector2(point.x, point.y);
+    public update() {
+        let mainEmitterPoint = new Phaser.Geom.Point(-40, 0);
+        Phaser.Math.RotateAround(mainEmitterPoint, 0, 0, this.ship.rotation);
+        this.mainEmitter.followOffset = new Phaser.Math.Vector2(mainEmitterPoint.x, mainEmitterPoint.y);
+
+        let portEmitterPoint = new Phaser.Geom.Point(40, -8);
+        Phaser.Math.RotateAround(portEmitterPoint, 0, 0, this.ship.rotation);
+        this.portEmitter.followOffset = new Phaser.Math.Vector2(portEmitterPoint.x, portEmitterPoint.y);
+
+        let starboardEmitterPoint = new Phaser.Geom.Point(40, 8);
+        Phaser.Math.RotateAround(starboardEmitterPoint, 0, 0, this.ship.rotation);
+        this.starboardEmitter.followOffset = new Phaser.Math.Vector2(starboardEmitterPoint.x, starboardEmitterPoint.y);
+
         if (this.cursors.left.isDown)
         {
+            this.starboardEmitter.on = true;
             this.ship.setAngularVelocity(-150);
         }
         else if (this.cursors.right.isDown)
         {
+            this.portEmitter.on = true;
             this.ship.setAngularVelocity(150);
         }
         else
         {
+            this.portEmitter.on = false;
+            this.starboardEmitter.on = false;
             this.ship.setAngularVelocity(0);
         }
 
         if (this.cursors.up.isDown)
         {
-            this.emitter.on = true;
+            this.mainEmitter.on = true;
             this.physics.velocityFromRotation(this.ship.rotation, 600, (<Phaser.Physics.Arcade.Body>this.ship.body).acceleration);
         }
         else
         {
-            this.emitter.on = false;
+            this.mainEmitter.on = false;
             this.ship.setAcceleration(0);
         }
 
